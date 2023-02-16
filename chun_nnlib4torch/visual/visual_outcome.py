@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sn
 
 def visual_train_val_loss(df):
     fig = plt.figure()
@@ -21,5 +22,6 @@ def visual_train_val(df):
     visual_train_val_acc(df)
     visual_train_val_loss(df)
     
-
+def visual_cf_matrix(df):
+    sn.heatmap(df, annot=True,fmt='d').get_figure()
     
