@@ -6,7 +6,7 @@ node_modules
 pt_data
 *.pt
 runs
-
+*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

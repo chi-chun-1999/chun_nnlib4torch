@@ -43,6 +43,6 @@ if __name__ == '__main__':
 
     confusion_matrix_name_tuple = ('0','1','2','3','4','5','6','7','8','9')
 
-    dwt_train = ClassifierTrainWithMatplotlib(dwt_cnn,dataloader,criterion,optimizer_ft,confusion_matrix_name_tuple,epochs=10)
+    dwt_train = ClassifierTrainWithMatplotlib(dwt_cnn,dataloader,criterion,optimizer_ft,confusion_matrix_name_tuple,epochs=10,store_outcomes=True)
 
     dwt_train.fit()

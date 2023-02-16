@@ -25,4 +25,4 @@ def createConfusionMatrix(model, loader,classes_name):
                          columns=[i for i in classes_name])
 
     plt.figure(figsize=(12, 7))    
-    return sn.heatmap(df_cm, annot=True,fmt='d').get_figure(),cf_matrix
+    return sn.heatmap(df_cm, annot=True,fmt='d').get_figure(),df_cm
