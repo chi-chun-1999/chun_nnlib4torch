@@ -16,11 +16,14 @@ import pandas as pd
 
 class ClassifierTrainWithSummaryWriter(TrainMethod):
 
-    def __init__(self, model, dataloader, criterion, optimizer,confusion_matrix_name_tuple, evaluation = None, epochs = 25):
+    def __init__(self, model, dataloader, criterion, optimizer,confusion_matrix_name_tuple,device = None, evaluation = None, epochs = 25):
 
         super().__init__( model, dataloader, criterion, optimizer, evaluation, epochs)
-        self._device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self._confusion_matrix_name_tuple = confusion_matrix_name_tuple
+        if device==None:
+            self._device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        else:
+            self._device = device
 
     def fit(self):
         since = time.time() # 記錄開始時間
@@ -108,13 +111,16 @@ class ClassifierTrainWithSummaryWriter(TrainMethod):
 
 class ClassifierTrainWithMatplotlib(TrainMethod):
 
-    def __init__(self, model, dataloader, criterion, optimizer,confusion_matrix_name_tuple, evaluation = None, epochs = 25,store_outcomes=False):
+    def __init__(self, model, dataloader, criterion, optimizer,confusion_matrix_name_tuple,device=None, evaluation = None, epochs = 25,store_outcomes=False):
 
         super().__init__( model, dataloader, criterion, optimizer, evaluation, epochs)
-        self._device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self._confusion_matrix_name_tuple = confusion_matrix_name_tuple
 
         self._store_outcomes = store_outcomes
+        if device==None:
+            self._device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        else:
+            self._device = device
 
 
     def fit(self):
@@ -139,31 +145,33 @@ class ClassifierTrainWithMatplotlib(TrainMethod):
                 n_sample = 0
                 n_val_sample = 0
             # 以 DataLoader 載入 batch 資料
-                for inputs, labels in self._dataloader[phase]:
-                    # 將資料放置於 GPU 或 CPU
-                    inputs = inputs.to(self._device,dtype=torch.float)
-                    labels = labels.to(self._device)
+                with torch.no_grad():
+                    for inputs, labels in self._dataloader[phase]:
+                        # 將資料放置於 GPU 或 CPU
+                        inputs = inputs.to(self._device,dtype=torch.float)
+                        labels = labels.to(self._device)
 
-                    # 重設參數梯度（gradient）
-                    self._optimizer.zero_grad()
-                   # 只在訓練模式計算參數梯度
+                        # 重設參數梯度（gradient）
+                        self._optimizer.zero_grad()
+                       # 只在訓練模式計算參數梯度
 
-                    with torch.set_grad_enabled(phase == 'train'):
-                        # 正向傳播（forward）
-                        outputs = self._model(inputs)
-                        _, preds = torch.max(outputs, 1)
-                        loss = self._criterion(outputs, labels)
+                        with torch.set_grad_enabled(phase == 'train'):
+                            # 正向傳播（forward）
+                            outputs = self._model(inputs)
+                            _, preds = torch.max(outputs, 1)
+                            loss = self._criterion(outputs, labels)
 
-                        if phase == 'train':
-                            loss.backward()  # 反向傳播（backward）
-                            self._optimizer.step() # 更新參數
-                            n_sample +=labels.size(0) 
-                        elif phase == 'val':
-                            n_val_sample +=labels.size(0)
+                            if phase == 'train':
+                                loss.backward()  # 反向傳播（backward）
+                                self._optimizer.step() # 更新參數
+                                n_sample +=labels.size(0) 
+                                torch.cuda.empty_cache()
+                            elif phase == 'val':
+                                n_val_sample +=labels.size(0)
 
-                    # 計算統計值
-                    running_loss += loss.item() * inputs.size(0)
-                    running_corrects += torch.sum(preds == labels.data)
+                        # 計算統計值
+                        running_loss += loss.item() * inputs.size(0)
+                        running_corrects += torch.sum(preds == labels.data)
                     
 
                 if phase == 'train':
@@ -173,7 +181,7 @@ class ClassifierTrainWithMatplotlib(TrainMethod):
                     epoch_acc = running_corrects.double() / n_sample
 
                     self.outcomes['train_loss'].append(epoch_loss)
-                    self.outcomes['train_acc'].append(torch.detach(epoch_acc.data.cpu()))
+                    self.outcomes['train_acc'].append(torch.detach(epoch_acc.data.cpu()).item())
                     
 
                 elif phase == 'val':
@@ -181,7 +189,7 @@ class ClassifierTrainWithMatplotlib(TrainMethod):
                     epoch_acc = running_corrects.double() / n_val_sample
 
                     self.outcomes['val_loss'].append(epoch_loss)
-                    self.outcomes['val_acc'].append(torch.detach(epoch_acc.data.cpu()))
+                    self.outcomes['val_acc'].append(torch.detach(epoch_acc.data.cpu()).item())
 
                 print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                     phase, epoch_loss, epoch_acc))
